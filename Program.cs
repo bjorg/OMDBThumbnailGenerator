@@ -57,7 +57,7 @@ namespace PosterFinder {
                     Console.WriteLine($"Skipping '{entry.Original}'. Unable to parse movie title and year from filename.");
                     continue;
                 }
-                var title = match.Groups[1].Value.Trim();
+                var title = new string(match.Groups[1].Value.Select(c => (char.IsLetterOrDigit(c) || (c == '\'')) ? c : ' ').ToArray()).Trim();
                 var year = match.Groups[2].Value.Trim();
 
                 // retrieve movie information
