@@ -26,7 +26,7 @@ namespace PosterFinder {
         private static Regex _title = new Regex(@"^(.+)\(([0-9]+)\).*\.iso$");
 
         //--- Class Methods ---
-        public static async Task Main(string[] args) {
+        public static async Task Main(string[] arguments) {
 
             // check if OMDB API key is set as environment variable
             var apikey = Environment.GetEnvironmentVariable("OMDBAPIKEY");
@@ -35,9 +35,26 @@ namespace PosterFinder {
                 return;
             }
 
-            var path = (args.Length > 0)
-                ? Path.GetFullPath(args[0])
-                : Directory.GetCurrentDirectory();
+            // check if a command line argument was supplied
+            if(arguments.Length > 0) {
+
+                // check if argument is a URI to an image
+                if(Uri.TryCreate(arguments[0], UriKind.Absolute, out var _)) {
+                    try {
+                        await GenerateImageFromUriAsync(arguments[0], "thumbnail.jpg");
+                    } catch(Exception e) {
+                        Console.WriteLine($"ERROR: thumbnail generation failed ({e.Message})");
+                        return;
+                    }
+                } else {
+                    await FindFiles(apikey, arguments[0]);
+                }
+            } else {
+                await FindFiles(apikey, Directory.GetCurrentDirectory());
+            }
+        }
+
+        private static async Task FindFiles(string apikey, string path) {
             Console.WriteLine($"Scanning: {path}");
             var entries = Directory.GetFiles(path, "*.iso", SearchOption.AllDirectories)
                 .Select(file => new {
@@ -89,25 +106,29 @@ namespace PosterFinder {
 
                 // generate thumbnail from poster
                 try {
-
-                    // download poster
-                    var response = await _httpClient.GetAsync(record.Poster);
-                    var stream = await response.Content.ReadAsStreamAsync();
-
-                    // resize poster to thumbnail
-                    using(var image = Image.Load(stream)) {
-                        image.Mutate(context => context.Resize(new ResizeOptions {
-                            Mode = ResizeMode.Pad,
-                            Size = new SixLabors.Primitives.Size(600, 600)
-                        }));
-                        image.Save(entry.Thumbnail);
-                    }
+                    await GenerateImageFromUriAsync(record.Poster, entry.Thumbnail);
                 } catch (Exception e) {
                     Console.WriteLine($"WARN: thumbnail generation failed ({e.Message})");
                     ++errorCount;
                     continue;
                 }
             }
+        }
+
+        private static async Task GenerateImageFromUriAsync(string uri, string filename) {
+
+                // download poster
+                var response = await _httpClient.GetAsync(uri);
+                var stream = await response.Content.ReadAsStreamAsync();
+
+                // resize poster to thumbnail
+                using(var image = Image.Load(stream)) {
+                    image.Mutate(context => context.Resize(new ResizeOptions {
+                        Mode = ResizeMode.Pad,
+                        Size = new SixLabors.Primitives.Size(600, 600)
+                    }));
+                    image.Save(filename);
+                }
         }
     }
 }
