@@ -37,11 +37,12 @@ namespace PosterFinder {
 
             // check if a command line argument was supplied
             if(arguments.Length > 0) {
+                var argument = arguments[0];
 
                 // check if argument is a URI to an image
-                if(Uri.TryCreate(arguments[0], UriKind.Absolute, out var _)) {
+                if(argument.StartsWith("https://") || argument.StartsWith("http://")) {
                     try {
-                        await GenerateImageFromUriAsync(arguments[0], "thumbnail.jpg");
+                        await GenerateImageFromUriAsync(argument, "thumbnail.jpg");
                     } catch(Exception e) {
                         Console.WriteLine($"ERROR: thumbnail generation failed ({e.Message})");
                         return;
