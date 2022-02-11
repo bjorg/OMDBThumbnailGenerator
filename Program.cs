@@ -40,7 +40,7 @@ namespace PosterFinder {
                 var argument = arguments[0];
 
                 // check if argument is a URI to an image
-                if(argument.StartsWith("https://") || argument.StartsWith("http://")) {
+                if(argument.StartsWith("https://", StringComparison.Ordinal) || argument.StartsWith("http://", StringComparison.Ordinal)) {
                     try {
                         await GenerateImageFromUriAsync(argument, "thumbnail.jpg");
                     } catch(Exception e) {
@@ -96,7 +96,17 @@ namespace PosterFinder {
 
                 // check if record has a thumbnail
                 if(string.IsNullOrEmpty(record.Poster) || (record.Poster == "N/A")) {
-                    Console.WriteLine("WARN: no thumbnail found");
+                    Console.Write("WARN: no thumbnail found. Enter URL: ");
+                    var url = Console.ReadLine().Trim();
+                    if(url.StartsWith("https://", StringComparison.Ordinal) || url.StartsWith("http://", StringComparison.Ordinal)) {
+                        try {
+                            await GenerateImageFromUriAsync(url, entry.Thumbnail);
+                        } catch(Exception e) {
+                            Console.WriteLine($"ERROR: thumbnail generation failed ({e.Message})");
+                        }
+                    } else {
+                        Console.WriteLine("WARN: no thumbnail generated");
+                    }
                     continue;
                 }
 
